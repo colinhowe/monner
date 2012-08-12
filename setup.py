@@ -15,7 +15,7 @@ setup(
 	author='Colin Howe',
 	author_email='colin@colinhowe.co.uk',
     scripts=['monner.py'],
-    install_requires=['psutil >= 4.0'],
+    install_requires=['psutil >= 0.4'],
 	classifiers=[
 		'Development Status :: 4 - Beta',
         'License :: OSI Approved :: Apache Software License',
