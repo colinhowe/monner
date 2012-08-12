@@ -4,8 +4,6 @@ import psutil
 KILOBYTES = 1024.0
 MEGABYTES = KILOBYTES * 1024.0
 
-_last_network_out = _last_network_in = 0
-
 def _get_cpu_stats():
     return psutil.cpu_percent(0)
 
@@ -13,6 +11,7 @@ def _get_memory_used():
     memory_used = psutil.phymem_usage().used - psutil.cached_phymem()
     return memory_used / MEGABYTES
 
+_last_network_out = _last_network_in = 0
 def _get_network_stats():
     global _last_network_in, _last_network_out
     network_stats = psutil.network_io_counters()
@@ -58,6 +57,8 @@ def _monitor(interval):
     try:
         while not _kill_monitor.wait(interval):
             output_stats()
+    except KeyboardInterrupt:
+        pass
     finally:
         output_stats()
 
@@ -71,8 +72,11 @@ def halt_monitor(monitor):
     monitor.join()
 
 def run_target(target, target_args, target_output):
-    subprocess.call([target] + target_args,
-            stdout=target_output, stderr=target_output)
+    try:
+        subprocess.call([target] + target_args,
+                stdout=target_output, stderr=target_output)
+    except KeyboardInterrupt:
+        pass
 
 def go(target, target_args, target_output, interval):
     print_header()
