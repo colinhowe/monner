@@ -108,7 +108,7 @@ def main():
         help='Fields to display.', nargs='*',
         default=default_fields, choices=_calculations.keys())
     parser.add_argument('-c', '--command', dest='command', nargs='+',
-        help='Command to run, including arguments')
+        required=True, help='Command to run, including arguments')
 
     args = parser.parse_args()
     go(args.command, args.target_output,
