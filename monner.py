@@ -34,7 +34,8 @@ _calculations = (
 )
 
 def output_stats():
-    stats = ['%.1f' % stat_fn() for _, stat_fn in _calculations]
+    stats = [('%.1f' % stat_fn()).rjust(len(name))
+            for name, stat_fn in _calculations]
     print '\t'.join(stats)
 
 def init_stats():
@@ -43,7 +44,6 @@ def init_stats():
 
 def print_header():
     print '\t'.join(name for name, _ in _calculations)
-    pass
 
 _kill_monitor = multiprocessing.Event()
 
