@@ -31,6 +31,13 @@ Run::
 The option --target-output will redirect stdout and stderr for the target
 program.
 
+Sample output::
+
+    CPU (%)	Memory used (mb)	Network in (kb)	Network out (kb)
+       99.5	          3470.4	            1.2	             0.0
+      100.0	          3470.9	           50.7	             0.0
+      100.0	          3470.8	            2.2	             0.0
+
 Feedback
 ========
 
