@@ -4,15 +4,18 @@ import psutil
 KILOBYTES = 1024.0
 MEGABYTES = KILOBYTES * 1024.0
 
-def _get_cpu_stats():
+def _get_cpu_stats(pid):
     return psutil.cpu_percent(0)
 
-def _get_memory_used():
-    memory_used = psutil.phymem_usage().used - psutil.cached_phymem()
-    return memory_used / MEGABYTES
+_get_mem = lambda pid: psutil.Process(pid).get_memory_info()
+def _get_mem_rss(pid):
+    return _get_mem(pid).rss / MEGABYTES
+
+def _get_mem_vms(pid):
+    return _get_mem(pid).vms / MEGABYTES
 
 def _counter(fn, field_name, divisor=1):
-    def wrapper():
+    def wrapper(pid):
         reading = getattr(fn(), field_name)
         change = reading - wrapper.last_reading
         wrapper.last_reading = reading
@@ -28,21 +31,22 @@ _get_disk_out = _counter(psutil.disk_io_counters, 'write_bytes', KILOBYTES)
 
 _calculations = (
     ('CPU (%)', _get_cpu_stats),
-    ('Memory used (mb)', _get_memory_used),
+    ('Memory RSS (mb)', _get_mem_rss),
+    ('Memory VMS (mb)', _get_mem_vms),
     ('Network in (kb)', _get_network_in),
     ('Network out (kb)', _get_network_out),
     ('Disk in (kb)', _get_disk_in),
     ('Disk out (kb)', _get_disk_out),
 )
 
-def output_stats():
-    stats = [('%.1f' % stat_fn()).rjust(len(name))
+def output_stats(pid):
+    stats = [('%.1f' % stat_fn(pid)).rjust(len(name))
             for name, stat_fn in _calculations]
     print '\t'.join(stats)
 
-def init_stats():
+def init_stats(pid):
     for _, fn in _calculations:
-        fn()
+        fn(pid)
 
 def print_header():
     print '\t'.join(name for name, _ in _calculations)
@@ -53,12 +57,12 @@ def run_target(target, target_args, target_output):
 
 def go(target, target_args, target_output, interval):
     print_header()
-    init_stats()
     target = run_target(target, target_args, target_output)
 
+    init_stats(target.pid)
     while True:
         time.sleep(interval)
-        output_stats()
+        output_stats(target.pid)
         if target.poll() is not None:
             break
 
