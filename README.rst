@@ -26,7 +26,7 @@ Install from source::
 
 Run::
 
-    monner.py --target-output /dev/null wget http://www.google.com
+    monner --target-output /dev/null wget http://www.google.com
 
 The option --target-output will redirect stdout and stderr for the target
 program.
