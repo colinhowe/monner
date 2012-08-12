@@ -16,7 +16,11 @@ Output is tab-separated for easy loading into spreadsheet programs.
 Installation
 ============
 
-Install::
+Install from pypi::
+
+    pip install monner
+
+Install from source::
 
     python setup.py install
 
