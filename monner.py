@@ -1,4 +1,4 @@
-import argparse, multiprocessing, os, subprocess, sys
+import argparse, subprocess, sys, time
 import psutil
 
 KILOBYTES = 1024.0
@@ -11,26 +11,28 @@ def _get_memory_used():
     memory_used = psutil.phymem_usage().used - psutil.cached_phymem()
     return memory_used / MEGABYTES
 
-_last_network_out = _last_network_in = 0
-def _get_network_stats():
-    global _last_network_in, _last_network_out
-    network_stats = psutil.network_io_counters()
-    
-    network_in = network_stats.bytes_recv - _last_network_in
-    network_in /= KILOBYTES
-    _last_network_in = network_stats.bytes_recv
+def _counter(fn, field_name, divisor=1):
+    def wrapper():
+        reading = getattr(fn(), field_name)
+        change = reading - wrapper.last_reading
+        wrapper.last_reading = reading
+        return change / divisor
+    wrapper.last_reading = 0
+    return wrapper
 
-    network_out = network_stats.bytes_sent - _last_network_out
-    network_out /= KILOBYTES
-    _last_network_out = network_stats.bytes_sent
+_get_network_in = _counter(psutil.network_io_counters, 'bytes_recv', KILOBYTES)
+_get_network_out = _counter(psutil.network_io_counters, 'bytes_sent', KILOBYTES)
 
-    return network_in, network_out
+_get_disk_in = _counter(psutil.disk_io_counters, 'read_bytes', KILOBYTES)
+_get_disk_out = _counter(psutil.disk_io_counters, 'write_bytes', KILOBYTES)
 
 _calculations = (
     ('CPU (%)', _get_cpu_stats),
     ('Memory used (mb)', _get_memory_used),
-    ('Network in (kb)', lambda: _get_network_stats()[0]),
-    ('Network out (kb)', lambda: _get_network_stats()[1]),
+    ('Network in (kb)', _get_network_in),
+    ('Network out (kb)', _get_network_out),
+    ('Disk in (kb)', _get_disk_in),
+    ('Disk out (kb)', _get_disk_out),
 )
 
 def output_stats():
@@ -39,55 +41,28 @@ def output_stats():
     print '\t'.join(stats)
 
 def init_stats():
-    _get_cpu_stats()
-    _get_network_stats()
+    for _, fn in _calculations:
+        fn()
 
 def print_header():
     print '\t'.join(name for name, _ in _calculations)
 
-_kill_monitor = multiprocessing.Event()
-
-def _monitor(interval):
-    pid = os.fork()
-    if pid != 0:
-        return pid
-    
-    init_stats()
-
-    try:
-        while not _kill_monitor.wait(interval):
-            output_stats()
-    except KeyboardInterrupt:
-        pass
-    finally:
-        output_stats()
-
-def launch_monitor(interval):
-    p = multiprocessing.Process(target=_monitor, args=(interval,))
-    p.start()
-    return p
-
-def halt_monitor(monitor):
-    _kill_monitor.set()
-    monitor.join()
-
 def run_target(target, target_args, target_output):
-    try:
-        subprocess.call([target] + target_args,
-                stdout=target_output, stderr=target_output)
-    except KeyboardInterrupt:
-        pass
+    return subprocess.Popen([target] + target_args,
+            stdout=target_output, stderr=target_output)
 
 def go(target, target_args, target_output, interval):
     print_header()
-    monitor = launch_monitor(interval)
+    init_stats()
+    target = run_target(target, target_args, target_output)
 
-    try:
-        run_target(target, target_args, target_output)
-    finally:
-        halt_monitor(monitor)
+    while True:
+        time.sleep(interval)
+        output_stats()
+        if target.poll() is not None:
+            break
 
-if __name__ == '__main__':
+def main():
     parser = argparse.ArgumentParser(
             description='Run a command and output system stats to a file')
     parser.add_argument('-i, --interval',
@@ -102,3 +77,6 @@ if __name__ == '__main__':
     args = parser.parse_args()
     go(args.command, args.args, args.target_output,
             interval=args.interval)
+
+if __name__ == '__main__':
+    main()
