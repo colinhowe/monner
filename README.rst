@@ -26,7 +26,7 @@ Install from source::
 
 Run::
 
-    monner --target-output /dev/null -c wget http://www.google.com
+    monner --target-output /dev/null wget http://www.google.com
 
 The option --target-output will redirect stdout and stderr for the target
 program.
@@ -37,6 +37,10 @@ Sample output::
        99.5	          3470.4	            1.2	             0.0
       100.0	          3470.9	           50.7	             0.0
       100.0	          3470.8	            2.2	             0.0
+
+If you need command line arguments for the target::
+
+    monner -- wget -V
 
 Fields Available
 ================

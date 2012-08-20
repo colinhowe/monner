@@ -9,7 +9,7 @@ long_desc = open(root_dir + '/README.rst').read()
 
 setup(
     name='monner',
-    version='0.4.1',
+    version='0.5.0',
     description='Monitors the system whilst executing a given program',
     url='https://github.com/colinhowe/monner',
     author='Colin Howe',
