@@ -16,7 +16,7 @@ Output is tab-separated for easy loading into spreadsheet programs.
 Requirements
 ============
 
-Python development headers. For example, in Ubuntu install this with `sudo apt-get install libpython-dev`.
+It requires Python Version 3.3+. Python development headers. For example, in Ubuntu install this with `sudo apt-get install libpython-dev`.
 
 Installation
 ============
